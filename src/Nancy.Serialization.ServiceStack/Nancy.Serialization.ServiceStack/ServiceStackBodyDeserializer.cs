@@ -1,4 +1,6 @@
-﻿namespace Nancy.Serializers.Json.ServiceStack
+﻿using Nancy.Extensions;
+
+namespace Nancy.Serializers.Json.ServiceStack
 {
     using System;
     using System.IO;
@@ -33,6 +35,36 @@
         {
             var deserializedObject = JsonSerializer.DeserializeFromStream(context.DestinationType, bodyStream);
 
+            if (!context.DestinationType.IsCollection())
+            {
+                var existingInstance = false;
+                foreach (var property in context.ValidModelProperties)
+                {
+                    var existingValue = property.GetValue(context.Model, null);
+
+                    if (!IsDefaultValue(existingValue, property.PropertyType))
+                    {
+                        existingInstance = true;
+                        break;
+                    }
+                }
+
+                if (existingInstance)
+                {
+                    foreach (var property in context.ValidModelProperties)
+                    {
+                        var existingValue = property.GetValue(context.Model, null);
+
+                        if (IsDefaultValue(existingValue, property.PropertyType))
+                        {
+                            CopyPropertyValue(property, deserializedObject, context.Model);
+                        }
+                    }
+
+                    return context.Model;
+                }
+            }
+
             if (context.DestinationType.GetProperties(BindingFlags.Public | BindingFlags.Instance).Except(context.ValidModelProperties).Any())
             {
                 return this.CreateObjectWithBlacklistExcluded(context, deserializedObject);
@@ -56,6 +88,13 @@
         private void CopyPropertyValue(PropertyInfo property, object sourceObject, object destinationObject)
         {
             property.SetValue(destinationObject, property.GetValue(sourceObject, null), null);
+        }
+
+        private static bool IsDefaultValue(object existingValue, Type propertyType)
+        {
+            return propertyType.IsValueType
+                ? Equals(existingValue, Activator.CreateInstance(propertyType))
+                : existingValue == null;
         }
     }
 }
