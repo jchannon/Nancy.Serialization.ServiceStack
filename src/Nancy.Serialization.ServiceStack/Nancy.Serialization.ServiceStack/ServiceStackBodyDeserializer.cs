@@ -1,12 +1,10 @@
-﻿using Nancy.Extensions;
-
-namespace Nancy.Serializers.Json.ServiceStack
+﻿namespace Nancy.Serializers.Json.ServiceStack
 {
     using System;
     using System.IO;
     using System.Linq;
     using System.Reflection;
-
+    using Nancy.Extensions;
     using Nancy.ModelBinding;
 
     using global::ServiceStack.Text;
